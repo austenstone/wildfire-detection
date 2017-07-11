@@ -1,5 +1,5 @@
 # Wildfire Sensor Project
-### AUTHORS: Austen Stone, Timothy Sketchley, Noah Gauthier
+##### AUTHORS: Austen Stone, Timothy Sketchley, Noah Gauthier
 
 ## Objectives
 The objective of this project is to create a air quality device which will assist local and federal employees in monitoring the various levels of pollution caused by forest fires.  Due to the large weight and size, cost, and complexity of available equipment, authorities are often left blind to the actual state of the air in the immediate vicinity of a forest fire.  
