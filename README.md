@@ -1,9 +1,3 @@
-__          ___ _     _  __ _             _____                          
-\ \        / (_) |   | |/ _(_)           / ____|                         
- \ \  /\  / / _| | __| | |_ _ _ __ ___  | (___   ___ _ ____   _____ _ __ 
-  \ \/  \/ / | | |/ _` |  _| | '__/ _ \  \___ \ / _ \ '__\ \ / / _ \ '__|
-   \  /\  /  | | | (_| | | | | | |  __/  ____) |  __/ |   \ V /  __/ |   
-    \/  \/   |_|_|\__,_|_| |_|_|  \___| |_____/ \___|_|    \_/ \___|_| 
 AUTHORS: Austen Stone, Timothy Sketchley, Noah Gauthier
 
 Objectives
@@ -14,6 +8,12 @@ Lightweight and durable.
 Ease of use
 Real time relaying of information to a central data receiver.
 Able to receive and respond to remote user commands	
-
+* Item 1
+* Item 2
+* Item 3
+  * Item 3a
+  * Item 3b
+  * Item 3c
+  
 Description
 The device will use a small fan connected to an intake system to draw in air and gas from the surrounding area.  Using a divided system and filter, one tube will be used to measure non-particulate gases while the other will measure particulate matter.  This will increase the longevity of the system by preventing the system undue contact with dust and dirt.  The sensors are to be connected to a central microcontroller unit.  The microcontroller will be connected to an LED display as well as an amplifier.  The purpose of the amplifier circuit is to strengthen the outgoing signal and increase its range of communication with authorities.  This remote connection will allow the user to operate a simple command interface.  Thus, the device will switch from battery saving mode to active mode when it receives a command from the user or a certain level of harmful gas trips the sensors.  By transferring the data to a central hub, the information can be tracked and recorded.  This will allow users to make real time decisions to improve the public health and safety and also record data important for a wide range of environmental sciences.  After consulting with personnel from the Florida Forestry Service, it has been decided that these devices will operate best when made to be left on the ground and disposable.
