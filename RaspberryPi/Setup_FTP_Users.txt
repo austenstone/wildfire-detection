@@ -1,0 +1,34 @@
+# ------------------------------------------------------------------------------
+# SETUP FTP USERS --------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# create the ftp users and lock them to the website directories
+useradd -d /srv/www/[website/appname] -m [ftp user name]
+
+# set the ftp account passwords
+passwd [ftp user name]
+
+# add the ftp users to the www-data user/group
+adduser [ftp user name] www-data
+
+# BUG FIX: 500 OOPS: vsftpd: refusing to run with writable root inside chroot()
+sudo add-apt-repository ppa:thefrontiergroup/vsftpd
+sudo apt-get update
+sudo apt-get install vsftpd
+
+# Edit the vsftpd.conf and append this setting to the end of the file to keep users' jailed!
+nano /etc/vsftpd.conf
+
+# add all of the text between the starting [[ and ending ]]
+# [[
+
+# Keep non-chroot listed users jailed
+allow_writeable_chroot=YES
+
+# ]]
+
+# restart the service for changes to take effect
+sudo service vsftpd restart
+
+#test ftp via secondary terminal window:
+ftp [ftp user name]@[server ipaddress] [ftp port]
