@@ -12,11 +12,15 @@ C:\Users\Austen\ Stone\AppData\Local\Temp\VMBuilds\ArduinoClient\nano_atmega328\
  C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Arduino.h \
  C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/pins_arduino.h \
  C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\variants\eightanaloginputs/../standard/pins_arduino.h \
- C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src/SPI.h \
+ C:\Users\Austen\ Stone\Documents\Arduino\libraries\kSeries/kSeries.h \
  C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Arduino.h \
+ C:\Users\Austen\ Stone\Documents\Arduino\libraries\kSeries/SoftwareSerial.h \
+ C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\cores\arduino/Stream.h \
+ C:\Program\ Files\ (x86)\Arduino\hardware\arduino\avr\libraries\SPI\src/SPI.h \
  C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RH_RF95.h \
  C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RHSPIDriver.h \
  C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RHGenericDriver.h \
  C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RadioHead.h \
  C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RHHardwareSPI.h \
- C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RHGenericSPI.h
+ C:\Users\Austen\ Stone\Documents\Arduino\libraries\RadioHead-master/RHGenericSPI.h \
+ C:\Users\Austen\ Stone\Documents\Arduino\libraries\DHT_sensor_library/DHT.h
