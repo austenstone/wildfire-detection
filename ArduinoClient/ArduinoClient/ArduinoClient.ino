@@ -176,22 +176,22 @@ float get_ppm() {
 
 
 float battery_level() {
-  int sum = 0;  // sum of samples taken
-  unsigned char sample_count = 0; // current sample number
-  float voltage = 0;  // raw voltage
-  float voltage_actual = 0; // voltage calculated using known voltage divider circuit
-  float battery_level = 0;  // percentage of battery used before cut off voltage
-    delay(10);
+	int sum = 0;  // sum of samples taken
+	unsigned char sample_count = 0; // current sample number
+	float voltage = 0;  // raw voltage
+	float voltage_actual = 0; // voltage calculated using known voltage divider circuit
+	float battery_level = 0;  // percentage of battery used before cut off voltage
+	delay(10);
     
-    voltage = (analogRead(A0) / 1024.0)*5.015;
-    voltage_actual = (voltage * 8)/ 5.015;
-    battery_level = voltage_actual;
-    if (voltage_actual < 6) { // cutoff voltage is 3 volts as per the data pages.  two batteries in series gives 3+3 or 6 v as the cutoff
-      Serial.println("Your Battery Level is Low.  Replace Soon");
-    }
+	voltage = (analogRead(A0) / 1024.0)*5.015;
+	voltage_actual = (voltage * 8)/ 5.015;
+	battery_level = voltage_actual;
+	if (voltage_actual < 6) { 
+		Serial.println("Your Battery Level is Low.  Replace Soon");
+	}
    
-    return battery_level;
-  }
+	return battery_level;
+}
 
 int lora_setup() {
 	pinMode(RFM95_RST, OUTPUT);
