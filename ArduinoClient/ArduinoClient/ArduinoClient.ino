@@ -185,7 +185,7 @@ float battery_level() {
     
 	voltage = (analogRead(A0) / 1024.0)*5.015;
 	voltage_actual = (voltage * 8)/ 5.015;
-	battery_level = voltage_actual;
+	battery_level = (-53.347*voltage_actual) + 439.76;
 	if (voltage_actual < 6) { 
 		Serial.println("Your Battery Level is Low.  Replace Soon");
 	}
