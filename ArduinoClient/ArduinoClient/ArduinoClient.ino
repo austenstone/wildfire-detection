@@ -21,10 +21,10 @@
 #define DHT_PIN 7
 #define CO2TX_PIN 8
 #define CO2RX_PIN 9
-#define FAN_PIN A6
+#define FAN_PIN A2
 #define PPM_PIN A3
 #define PPM_LED 10
-#define SEND_LED A0
+#define SEND_LED A1 // can't be A0. that the battery voltage monitor for battery percentage
 
 struct WildfirePacket {
 	long  loop_count;
@@ -46,7 +46,7 @@ float get_humidity();
 float get_ppm();
 int   lora_setup();
 int   lora_send(char* message, int size);
-float get_battery_level();
+float battery_level();
 
 float initial_gas;
 float calibration_factor;
@@ -61,8 +61,8 @@ void setup() {
 	delay(1000);
 	pinMode(A0, INPUT);
 	pinMode(A1, OUTPUT);
-	pinMode(FAN_PIN, OUTPUT);
-	analogWrite(FAN_PIN, HIGH);
+  pinMode(FAN_PIN, OUTPUT);
+	
 	ozone_setup();
 	lora_setup();
 }
@@ -74,6 +74,10 @@ void loop() {
 	struct WildfirePacket *packet = (WildfirePacket*)malloc(sizeof(WildfirePacket));
 	memset(packet, 0, sizeof(WildfirePacket));
 	loopcount = loopcount + 1;
+
+  
+  digitalWrite(FAN_PIN, HIGH);
+  delay(15000);
 
 	packet->loop_count = loopcount;
 	Serial.print("Loop_Count: "); Serial.print(packet->loop_count);
@@ -107,6 +111,8 @@ void loop() {
 	lora_send(buffer, 250); //? might need to memcpy into buffer instead.
 	free(packet);
 	delay(1000);
+  digitalWrite(FAN_PIN, LOW);
+  delay(15000);
 }
 
 int ozone_setup() {
@@ -175,7 +181,7 @@ float get_ppm() {
 }
 
 
-float battery_level() {
+float get_battery_level() {
 	int sum = 0;  // sum of samples taken
 	unsigned char sample_count = 0; // current sample number
 	float voltage = 0;  // raw voltage
