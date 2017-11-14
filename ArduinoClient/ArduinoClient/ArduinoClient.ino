@@ -62,7 +62,7 @@ void setup() {
 	pinMode(A0, INPUT);
 	pinMode(A1, OUTPUT);
 	pinMode(FAN_PIN, OUTPUT);
-	analogWrite(FAN_PIN, HIGH);
+	digitalWrite(FAN_PIN, HIGH);
 	ozone_setup();
 	lora_setup();
 }
