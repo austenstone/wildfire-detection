@@ -61,8 +61,13 @@ void setup() {
 	delay(1000);
 	pinMode(A0, INPUT);
 	pinMode(A1, OUTPUT);
+<<<<<<< HEAD
   pinMode(FAN_PIN, OUTPUT);
 	
+=======
+	pinMode(FAN_PIN, OUTPUT);
+	digitalWrite(FAN_PIN, HIGH);
+>>>>>>> 7c247333dffc76e8b32dd03dacc0071f81e334fc
 	ozone_setup();
 	lora_setup();
 }
