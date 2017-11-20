@@ -36,7 +36,7 @@ struct WildfirePacket {
 	float battery;
 };
 
-int      ozone_setup();	// do not thing this has an impact
+int      ozone_setup();	// do not think this has an impact
 float    get_ozone_gas();
 float    get_co2_ppm();
 int      get_co2_temp();
@@ -67,6 +67,7 @@ void setup() {
 }
 
 int loopcount = 0;
+int delayt = 10000;
 
 void loop() {
 	bool packet_sent = 0;
@@ -78,6 +79,7 @@ void loop() {
 	loopcount = loopcount + 1;
 	digitalWrite(FAN_PIN, HIGH);
 
+	// Get Values
 	packet->loop_count = loopcount;
 	packet->temp       = get_temperature_f();
 	packet->co2        = get_co2_ppm();
@@ -86,6 +88,7 @@ void loop() {
 	packet->ppm        = get_ppm();
 	packet->battery    = get_battery_level();
 
+	// Build buffer
 	memcpy(buffer, &packet->loop_count, sizeof(long));
 	memcpy(buffer + sizeof(long), &packet->temp, sizeof(float));
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 1), &packet->co2, sizeof(float));
@@ -97,14 +100,14 @@ void loop() {
 	print_packet(packet);
 
 	while (!packet_sent) {
-		// Send the packet
+	// Send the packet
 		lora_send(buffer, 28);
 
-		// Receive response
+	// Receive response
 		buf = lora_receive();
 		delay(100);
 
-		// Check response matches what we sent
+	// Check response matches what we sent
 		if (memcmp(buf, buffer, 28) == 0) {
 			Serial.println("Packets match. Sending ACK.");
 			lora_send("ACK", 4);
@@ -116,9 +119,8 @@ void loop() {
 	}
 
 	free(packet);
-	//delay(1000);
 	digitalWrite(FAN_PIN, LOW);
-	//delay(1000);
+	delay(delayt);
 }
 
 int ozone_setup() {
