@@ -3,7 +3,6 @@
 #include "kSeries.h"
 #include <SPI.h>
 #include <RH_RF95.h>
-#include <math.h>
 #include <DHT.h>
 
 /* LORA */
@@ -36,19 +35,19 @@ struct WildfirePacket {
 	float battery;
 };
 
-int      ozone_setup();	// do not think this has an impact
-float    get_ozone_gas();
-float    get_co2_ppm();
-int      get_co2_temp();
-float    get_temperature_c();
-float    get_temperature_f();
-float    get_humidity();
-float    get_ppm();
-float    get_battery_level();
-int      lora_setup();
-int		 lora_send(char* message, int size);
+int ozone_setup();	// do not think this has an impact
+float get_ozone_gas();
+float get_co2_ppm();
+int get_co2_temp();
+float get_temperature_c();
+float get_temperature_f();
+float get_humidity();
+float get_ppm();
+float get_battery_level();
+int lora_setup();
+int lora_send(char* message, int size);
 uint8_t* lora_receive();
-int	     print_packet(WildfirePacket *packet);
+int process_command(uint8_t* buf);
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);	// Lora
 kSeries K_30(CO2TX_PIN, CO2RX_PIN);	// CO2
@@ -64,63 +63,97 @@ void setup() {
 	digitalWrite(FAN_PIN, HIGH);
 	ozone_setup();
 	lora_setup();
+
 }
 
+int fan_on = 1;
 int loopcount = 0;
-int delayt = 10000;
+unsigned long delayt = 100000;
+unsigned long start = millis();
 
 void loop() {
-	bool packet_sent = 0;
-	char buffer[28] = "";
+	uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+	uint8_t len = sizeof(buf);
+	unsigned long now = millis();
+
+	if ((now - start) >= delayt) {
+		int packet_sent = 1;
+		start = millis();
+		while (packet_sent != 0) {
+			packet_sent = send_sensor_data();
+		}
+	}
+	if (rf95.available()) {
+		if (rf95.recv(buf, &len)) {
+			Serial.print("RECEIVED: "); Serial.println((char*)buf);
+			if (process_command(buf) != 0) {
+				Serial.println("Commanding Processing Failed.");
+			}
+		}
+	}
+}
+
+int send_sensor_data() {
+	char buffer[28] = {};
 	uint8_t* buf;
 	struct WildfirePacket *packet = (WildfirePacket*)malloc(sizeof(WildfirePacket));
+	int sent = 0;
 
 	memset(packet, 0, sizeof(WildfirePacket));
 	loopcount = loopcount + 1;
-	digitalWrite(FAN_PIN, HIGH);
+	if (fan_on) digitalWrite(FAN_PIN, HIGH);
 
-	// Get Values
+
 	packet->loop_count = loopcount;
-	packet->temp       = get_temperature_f();
-	packet->co2        = get_co2_ppm();
-	packet->co2_temp   = get_co2_temp();
-	packet->ozone_gas  = get_ozone_gas();
-	packet->ppm        = get_ppm();
-	packet->battery    = get_battery_level();
-
-	// Build buffer
 	memcpy(buffer, &packet->loop_count, sizeof(long));
+	Serial.print("Packet["); Serial.print(packet->loop_count); Serial.print("] = ");
+	packet->temp = get_temperature_f();
 	memcpy(buffer + sizeof(long), &packet->temp, sizeof(float));
+	Serial.print(" Tmp: "); Serial.print(packet->temp);
+	packet->co2 = 10;// get_co2_ppm();
+	packet->co2_temp = 10;// get_co2_temp();
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 1), &packet->co2, sizeof(float));
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 2), &packet->co2, sizeof(float));
+	Serial.print(", Co2: "); Serial.print(packet->co2);
+	Serial.print(", CoT: "); Serial.print(packet->co2_temp);
+	packet->ozone_gas = get_ozone_gas();
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 3), &packet->ozone_gas, sizeof(float));
+	Serial.print(", OzG: "); Serial.print(packet->ozone_gas);
+	packet->ppm = get_ppm();
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 4), &packet->ppm, sizeof(float));
+	Serial.print(", PPM: "); Serial.print(packet->ppm);
+	packet->battery = get_battery_level();
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 5), &packet->battery, sizeof(float));
+	Serial.print(", Bat: "); Serial.println(packet->battery);
 
-	print_packet(packet);
-
-	while (!packet_sent) {
-	// Send the packet
+	while (!sent) {
 		lora_send(buffer, 28);
-
-	// Receive response
-		buf = lora_receive();
-		delay(100);
-
-	// Check response matches what we sent
-		if (memcmp(buf, buffer, 28) == 0) {
-			Serial.println("Packets match. Sending ACK.");
-			lora_send("ACK", 4);
-			packet_sent = 1;
-		} else {
-			Serial.println("ERROR: PACKETS DO NOT MATCH! SENDING AGAIN...");
-			delay(500);
+		if (rf95.waitAvailableTimeout(1000)) {
+			uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+			uint8_t len = sizeof(buf);
+			if (rf95.recv(buf, &len)) {
+				if (memcmp(buf, buffer, 28) == 0) {
+					Serial.println("Packets match. Sending ACK.");
+					lora_send("ACK", 4);
+					++sent;
+				}
+				else {
+					if (process_command(buf) == 0) {
+						Serial.println("FAILED ACK: Processed Command.");
+						continue;
+					}
+					Serial.print("Packet mismatch. FAILED ACK: "); Serial.println((char*)buf);
+				}
+			}
+			else {
+				Serial.println("Receive failed...");
+				return NULL;
+			}
 		}
 	}
 
 	free(packet);
-	digitalWrite(FAN_PIN, LOW);
-	delay(delayt);
+	return 0;
 }
 
 int ozone_setup() {
@@ -194,7 +227,6 @@ float get_battery_level() {
 	float voltage = 0;  // raw voltage
 	float voltage_actual = 0; // voltage calculated using known voltage divider circuit
 	float battery_level = 0;  // percentage of battery used before cut off voltage
-	delay(10);
 
 	voltage = (analogRead(A0) / 1024.0)*5.015;
 	voltage_actual = (voltage * 8) / 5.015;
@@ -247,29 +279,37 @@ uint8_t* lora_receive() {
 	uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
 	uint8_t len = sizeof(buf);
 
-	if (rf95.waitAvailableTimeout(5000)) {
+	if (rf95.available()) {
 		if (rf95.recv(buf, &len)) {
 			Serial.print("Got reply, RSSI: "); Serial.println(rf95.lastRssi(), DEC);
-		} else {
+		}
+		else {
 			Serial.println("Receive failed...");
 			return NULL;
 		}
-	} else {
-		Serial.println("Timed out...");
-		return NULL;
 	}
+
 	return buf;
 }
 
-int print_packet(WildfirePacket *packet){
-	char buf[250];
-	sprintf(buf, "Packet[%d] =>", packet->loop_count);
-	Serial.print(buf);
-	Serial.print(" Temp: "); Serial.print(packet->temp);
-	Serial.print(", Co2: "); Serial.print(packet->co2);
-	Serial.print(", Co2_Temp: "); Serial.print(packet->co2_temp);
-	Serial.print(", Ozone_Gas: "); Serial.print(packet->ozone_gas);
-	Serial.print(", PPM: "); Serial.print(packet->ppm);
-	Serial.print(", Battery: "); Serial.println(packet->battery);
+int process_command(uint8_t* buf) {
+	if (memcmp(buf, "fanoff", 6) == 0) {
+		Serial.println("Turning Fan OFF");
+		fan_on = 0;
+		digitalWrite(FAN_PIN, LOW);
+	}
+	else if (memcmp(buf, "fanon", 6) == 0) {
+		Serial.println("Turning Fan ON");
+		fan_on = 1;
+		digitalWrite(FAN_PIN, HIGH);
+	}
+	else if (memcmp(buf, "interval", 7) == 0) {
+		long interval;
+		Serial.print("INTERVAL: ");
+		memcpy(&interval, (char*)buf + 8, sizeof(long));
+		if (interval >= 0) delayt = interval;
+		Serial.println(interval);
+	}
+
 	return 0;
 }
