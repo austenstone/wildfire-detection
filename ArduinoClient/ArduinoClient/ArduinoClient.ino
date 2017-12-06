@@ -10,6 +10,7 @@
 #define RFM95_CS 4
 #define RFM95_RST 2
 #define RFM95_INT 3
+#define NODE_ADDR 3
 
 /* CONSTANTS */
 #define SensitivityCode 43.11
@@ -33,6 +34,7 @@ struct WildfirePacket {
 	float temp;
 	float ppm;
 	float battery;
+	char  chksum;
 };
 
 int ozone_setup();	// do not think this has an impact
@@ -44,6 +46,7 @@ float get_temperature_f();
 float get_humidity();
 float get_ppm();
 float get_battery_level();
+char chksum(char* buffer, int length);
 int lora_setup();
 int lora_send(char* message, int size);
 uint8_t* lora_receive();
@@ -68,7 +71,7 @@ void setup() {
 
 int fan_on = 1;
 int loopcount = 0;
-unsigned long delayt = 100000;
+unsigned long delayt = 5000; //100000;
 unsigned long start = millis();
 
 void loop() {
@@ -77,11 +80,9 @@ void loop() {
 	unsigned long now = millis();
 
 	if ((now - start) >= delayt) {
-		int packet_sent = 1;
+		Serial.println("SENDING!");
 		start = millis();
-		while (packet_sent != 0) {
-			packet_sent = send_sensor_data();
-		}
+		send_sensor_data();
 	}
 	if (rf95.available()) {
 		if (rf95.recv(buf, &len)) {
@@ -94,7 +95,7 @@ void loop() {
 }
 
 int send_sensor_data() {
-	char buffer[28] = {};
+	char buffer[29] = {};
 	uint8_t* buf;
 	struct WildfirePacket *packet = (WildfirePacket*)malloc(sizeof(WildfirePacket));
 	int sent = 0;
@@ -103,15 +104,14 @@ int send_sensor_data() {
 	loopcount = loopcount + 1;
 	if (fan_on) digitalWrite(FAN_PIN, HIGH);
 
-
 	packet->loop_count = loopcount;
 	memcpy(buffer, &packet->loop_count, sizeof(long));
 	Serial.print("Packet["); Serial.print(packet->loop_count); Serial.print("] = ");
 	packet->temp = get_temperature_f();
 	memcpy(buffer + sizeof(long), &packet->temp, sizeof(float));
 	Serial.print(" Tmp: "); Serial.print(packet->temp);
-	packet->co2 = 10;// get_co2_ppm();
-	packet->co2_temp = 10;// get_co2_temp();
+	packet->co2 = 12;// get_co2_ppm();
+	packet->co2_temp = 14;// get_co2_temp();
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 1), &packet->co2, sizeof(float));
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 2), &packet->co2, sizeof(float));
 	Serial.print(", Co2: "); Serial.print(packet->co2);
@@ -125,32 +125,10 @@ int send_sensor_data() {
 	packet->battery = get_battery_level();
 	memcpy(buffer + sizeof(long) + (sizeof(float) * 5), &packet->battery, sizeof(float));
 	Serial.print(", Bat: "); Serial.println(packet->battery);
+	packet->chksum = chksum(buffer, 27);
+	memcpy(buffer + sizeof(long) + (sizeof(float) * 6), &packet->chksum, sizeof(char));
 
-	while (!sent) {
-		lora_send(buffer, 28);
-		if (rf95.waitAvailableTimeout(1000)) {
-			uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-			uint8_t len = sizeof(buf);
-			if (rf95.recv(buf, &len)) {
-				if (memcmp(buf, buffer, 28) == 0) {
-					Serial.println("Packets match. Sending ACK.");
-					lora_send("ACK", 4);
-					++sent;
-				}
-				else {
-					if (process_command(buf) == 0) {
-						Serial.println("FAILED ACK: Processed Command.");
-						continue;
-					}
-					Serial.print("Packet mismatch. FAILED ACK: "); Serial.println((char*)buf);
-				}
-			}
-			else {
-				Serial.println("Receive failed...");
-				return NULL;
-			}
-		}
-	}
+	lora_send(buffer, 29);
 
 	free(packet);
 	return 0;
@@ -222,7 +200,6 @@ float get_ppm() {
 	return dustDensity;
 }
 
-
 float get_battery_level() {
 	float voltage = 0;  // raw voltage
 	float voltage_actual = 0; // voltage calculated using known voltage divider circuit
@@ -258,8 +235,8 @@ int lora_setup() {
 	Serial.print("Set Freq to: "); Serial.println(RF95_FREQ);
 
 	rf95.setTxPower(15, false);	// Transmitter powers from 5 to 23 dBm:
-	rf95.setThisAddress(2);
-	rf95.setHeaderFrom(2);
+	rf95.setThisAddress(NODE_ADDR);
+	rf95.setHeaderFrom(NODE_ADDR);
 	rf95.setHeaderTo(1);
 	return 0;
 }
@@ -312,4 +289,14 @@ int process_command(uint8_t* buf) {
 	}
 
 	return 0;
+}
+
+char chksum(char* buffer, int length) {
+	int i = 0;
+	char chksum = 1;
+
+	for (i = 0; i < length; i++) {
+		chksum ^= buffer[i];
+	}
+	return chksum;
 }
